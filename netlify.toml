@@ -1,0 +1,3 @@
+[build]
+publish = "/"
+# No build command necesario para sitios estáticos
