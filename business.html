@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comercio - Manda2 Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.3/plotly.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-title { font-family: 'Playfair Display', serif; }
+        .gradient-text { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15); }
+        .slide-in { animation: slideIn 0.6s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .order-pending { border-left: 4px solid #f59e0b; }
+        .order-preparing { border-left: 4px solid #3b82f6; }
+        .order-ready { border-left: 4px solid #10b981; }
+        .order-delivered { border-left: 4px solid #6b7280; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .status-pending { background: #f59e0b; animation: pulse 2s infinite; }
+        .status-preparing { background: #3b82f6; animation: pulse 2s infinite; }
+        .status-ready { background: #10b981; }
+        .status-delivered { background: #6b7280; }
+        .product-image { width: 60px; height: 60px; object-fit: cover; border-radius: 0.5rem; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-white shadow-md z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold gradient-text">Manda2</h1>
+                    <span class="ml-2 text-sm text-gray-600">Comercio</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <button onclick="showSection('dashboard')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Dashboard
+                    </button>
+                    <button onclick="showSection('orders')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Pedidos
+                    </button>
+                    <button onclick="showSection('products')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Productos
+                    </button>
+                    <button onclick="showSection('finance')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Finanzas
+                    </button>
+                    <button onclick="showSection('profile')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Perfil
+                    </button>
+                    <button onclick="logout()" class="text-gray-600 hover:text-red-600 p-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-orange-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <button onclick="showSection('dashboard')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Dashboard</button>
+                <button onclick="showSection('orders')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Pedidos</button>
+                <button onclick="showSection('products')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Productos</button>
+                <button onclick="showSection('finance')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Finanzas</button>
+                <button onclick="showSection('profile')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Perfil</button>
+                <button onclick="logout()" class="block w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:text-red-700">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-16">
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="section-content">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Welcome Header -->
+                <div class="bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">¡Hola <span id="business-name">Comercio</span>!</h1>
+                            <p class="text-xl opacity-90">Bienvenido a tu panel de control</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold" id="today-revenue">$0</div>
+                            <div class="text-sm opacity-75">Ingresos de hoy</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Pedidos Hoy</p>
+                                <p class="text-2xl font-bold text-gray-900" id="today-orders">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Productos Activos</p>
+                                <p class="text-2xl font-bold text-gray-900" id="active-products">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Calificación Promedio</p>
+                                <p class="text-2xl font-bold text-gray-900" id="avg-rating">4.5</p>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Comisión Manda2</p>
+                                <p class="text-2xl font-bold text-gray-900">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">Últimos Pedidos</h2>
+                        <button onclick="showSection('orders')" class="text-orange-600 hover:text-orange-700 font-medium">
+                            Ver todos
+                        </button>
+                    </div>
+                    <div id="recent-orders" class="space-y-4">
+                        <!-- Recent orders will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Ventas de la Semana</h2>
+                    <div id="sales-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Orders Section -->
+        <section id="orders-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900">Gestión de Pedidos</h1>
+                    <div class="flex space-x-4">
+                        <button onclick="filterOrders('all')" class="filter-btn px-4 py-2 rounded-lg bg-orange-600 text-white font-medium">Todos</button>
+                        <button onclick="filterOrders('pending')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Pendientes</button>
+                        <button onclick="filterOrders('preparing')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">En Preparación</button>
+                        <button onclick="filterOrders('ready')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Listos</button>
+                    </div>
+                </div>
+
+                <div id="orders-list" class="space-y-4">
+                    <!-- Orders will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section id="products-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900">Gestión de Productos</h1>
+                    <button onclick="showAddProductModal()" class="bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors">
+                        Agregar Producto
+                    </button>
+                </div>
+
+                <!-- Import CSV -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg mb-8">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Importar Productos (CSV)</h2>
+                    <div class="flex items-center space-x-4">
+                        <input type="file" id="csv-file" accept=".csv" class="px-4 py-2 border border-gray-300 rounded-lg">
+                        <button onclick="importProducts()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                            Importar
+                        </button>
+                        <a href="#" class="text-orange-600 hover:text-orange-700 font-medium">Descargar plantilla CSV</a>
+                    </div>
+                </div>
+
+                <!-- Products List -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-900">Productos</h2>
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="product-search" placeholder="Buscar productos..." class="px-4 py-2 border border-gray-300 rounded-lg">
+                            <select id="category-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Todas las categorías</option>
+                                <option value="food">Comida</option>
+                                <option value="drinks">Bebidas</option>
+                                <option value="desserts">Postres</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="products-list" class="space-y-4">
+                        <!-- Products will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Finance Section -->
+        <section id="finance-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-8">Panel Financiero</h1>
+
+                <!-- Financial Summary -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Ventas del Mes</p>
+                                <p class="text-2xl font-bold text-green-600" id="monthly-sales">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Comisiones Manda2</p>
+                                <p class="text-2xl font-bold text-red-600" id="total-commissions">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Monto a Recibir</p>
+                                <p class="text-2xl font-bold text-blue-600" id="amount-to-receive">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Transferencias Recibidas</p>
+                                <p class="text-2xl font-bold text-purple-600" id="transfers-received">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Ingresos vs Comisiones</h2>
+                        <div id="revenue-commissions-chart" style="height: 300px;"></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Ventas por Categoría</h2>
+                        <div id="sales-by-category-chart" style="height: 300px;"></div>
+                    </div>
+                </div>
+
+                <!-- Settlement History -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Historial de Liquidaciones</h2>
+                    <div id="settlements-list" class="space-y-4">
+                        <!-- Settlements will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Section -->
+        <section id="profile-section" class="section-content hidden">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-8">Perfil del Comercio</h1>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Business Info -->
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Información del Comercio</h2>
+                        <form id="business-profile-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Comercio</label>
+                                <input type="text" id="business-name-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+                                <input type="text" id="business-address-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                                <input type="tel" id="business-phone-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                                <select id="business-category-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                    <option value="food">Comida</option>
+                                    <option value="groceries">Almacén</option>
+                                    <option value="pharmacy">Farmacia</option>
+                                    <option value="kiosk">Kiosco</option>
+                                    <option value="bakery">Panadería</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-700 transition-colors">
+                                Actualizar Información
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Business Hours -->
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Horarios de Atención</h2>
+                        <div id="business-hours" class="space-y-3 mb-4">
+                            <!-- Business hours will be loaded here -->
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Estado actual:</span>
+                            <button id="store-status-btn" onclick="toggleStoreStatus()" class="px-4 py-2 rounded-lg font-medium transition-colors">
+                                Abierto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bank Info -->
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Información Bancaria</h2>
+                        <form id="bank-info-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">CBU/Alias</label>
+                                <input type="text" id="business-cbu" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Banco</label>
+                                <input type="text" id="business-bank" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Titular de la Cuenta</label>
+                                <input type="text" id="business-account-holder" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <button type="submit" class="w-full bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-700 transition-colors">
+                                Actualizar Datos Bancarios
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Estadísticas</h2>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Total de Pedidos</span>
+                                <span id="total-orders-stat" class="font-semibold text-2xl text-orange-600">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Ingresos Totales</span>
+                                <span id="total-revenue-stat" class="font-semibold text-2xl text-green-600">$0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Clientes Satisfechos</span>
+                                <span id="satisfied-customers" class="font-semibold text-2xl text-blue-600">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Add Product Modal -->
+    <div id="add-product-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full">
+                <div class="p-6 border-b">
+                    <h2 class="text-2xl font-bold text-gray-900">Agregar Producto</h2>
+                </div>
+                
+                <form id="add-product-form" class="p-6 space-y-4">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Producto</label>
+                            <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Precio</label>
+                            <input type="number" name="price" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <textarea name="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"></textarea>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                            <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                <option value="food">Comida</option>
+                                <option value="drinks">Bebidas</option>
+                                <option value="desserts">Postres</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                            <input type="number" name="stock" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">URL de Imagen (opcional)</label>
+                        <input type="url" name="image" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" name="available" class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500">
+                        <label class="ml-2 text-sm text-gray-700">Disponible para venta</label>
+                    </div>
+                </form>
+                
+                <div class="flex space-x-4 p-6 border-t">
+                    <button onclick="closeAddProductModal()" class="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="saveProduct()" class="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors">
+                        Guardar Producto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="business.js"></script>
+</body>
+</html>

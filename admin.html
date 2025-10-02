@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrador - Manda2 Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.3/plotly.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hero-title { font-family: 'Playfair Display', serif; }
+        .gradient-text { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15); }
+        .slide-in { animation: slideIn 0.6s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .status-pending { border-left: 4px solid #f59e0b; }
+        .status-active { border-left: 4px solid #3b82f6; }
+        .status-completed { border-left: 4px solid #10b981; }
+        .status-cancelled { border-left: 4px solid #ef4444; }
+        .user-card { transition: all 0.3s ease; }
+        .user-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        #live-map { height: 400px; border-radius: 0.75rem; }
+        .pulse-dot { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-white shadow-md z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold gradient-text">Manda2</h1>
+                    <span class="ml-2 text-sm text-gray-600">Admin</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <button onclick="showSection('dashboard')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Dashboard
+                    </button>
+                    <button onclick="showSection('orders')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Pedidos
+                    </button>
+                    <button onclick="showSection('users')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Usuarios
+                    </button>
+                    <button onclick="showSection('finance')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Finanzas
+                    </button>
+                    <button onclick="showSection('support')" class="nav-btn text-gray-700 hover:text-orange-600 px-3 py-2 text-sm font-medium transition-colors border-b-2 border-transparent hover:border-orange-600">
+                        Soporte
+                    </button>
+                    <button onclick="logout()" class="text-gray-600 hover:text-red-600 p-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-orange-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <button onclick="showSection('dashboard')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Dashboard</button>
+                <button onclick="showSection('orders')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Pedidos</button>
+                <button onclick="showSection('users')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Usuarios</button>
+                <button onclick="showSection('finance')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Finanzas</button>
+                <button onclick="showSection('support')" class="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:text-orange-600">Soporte</button>
+                <button onclick="logout()" class="block w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:text-red-700">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-16">
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="section-content">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Welcome Header -->
+                <div class="bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">Panel de Administración</h1>
+                            <p class="text-xl opacity-90">Control total de la plataforma Manda2</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold" id="total-revenue">$0</div>
+                            <div class="text-sm opacity-75">Ingresos totales</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Monitor -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg mb-8">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Monitoreo en Vivo</h2>
+                    <div id="live-map"></div>
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="w-4 h-4 bg-green-500 rounded-full pulse-dot mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-600">Repartidores Activos</p>
+                            <p class="font-bold text-lg" id="active-drivers">12</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-4 h-4 bg-blue-500 rounded-full pulse-dot mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-600">Pedidos en Curso</p>
+                            <p class="font-bold text-lg" id="active-orders">8</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-4 h-4 bg-orange-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-600">Comercios Abiertos</p>
+                            <p class="font-bold text-lg" id="open-businesses">24</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-4 h-4 bg-purple-500 rounded-full mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-600">Usuarios Online</p>
+                            <p class="font-bold text-lg" id="online-users">156</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Total Pedidos</p>
+                                <p class="text-2xl font-bold text-gray-900" id="total-orders">1,234</p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Usuarios Registrados</p>
+                                <p class="text-2xl font-bold text-gray-900" id="total-users">892</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Comercios Activos</p>
+                                <p class="text-2xl font-bold text-gray-900" id="total-businesses">45</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Repartidores</p>
+                                <p class="text-2xl font-bold text-gray-900" id="total-drivers">67</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Ventas del Mes</h2>
+                        <div id="sales-chart" style="height: 300px;"></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Distribución de Usuarios</h2>
+                        <div id="users-chart" style="height: 300px;"></div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Actividad Reciente</h2>
+                    <div id="recent-activity" class="space-y-4">
+                        <!-- Recent activity will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Orders Section -->
+        <section id="orders-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900">Gestión de Pedidos</h1>
+                    <div class="flex space-x-4">
+                        <button onclick="filterOrders('all')" class="filter-btn px-4 py-2 rounded-lg bg-orange-600 text-white font-medium">Todos</button>
+                        <button onclick="filterOrders('pending')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Pendientes</button>
+                        <button onclick="filterOrders('active')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Activos</button>
+                        <button onclick="filterOrders('completed')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Completados</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="mb-6">
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="order-search" placeholder="Buscar pedidos..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <select id="order-status-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Todos los estados</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="preparing">En Preparación</option>
+                                <option value="ready">Listo</option>
+                                <option value="delivering">En Camino</option>
+                                <option value="delivered">Entregado</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="orders-list" class="space-y-4">
+                        <!-- Orders will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Users Section -->
+        <section id="users-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
+                    <div class="flex space-x-4">
+                        <button onclick="filterUsers('all')" class="filter-btn px-4 py-2 rounded-lg bg-orange-600 text-white font-medium">Todos</button>
+                        <button onclick="filterUsers('customer')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Clientes</button>
+                        <button onclick="filterUsers('business')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Comercios</button>
+                        <button onclick="filterUsers('driver')" class="filter-btn px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium">Repartidores</button>
+                    </div>
+                </div>
+
+                <!-- Pending Validations -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg mb-8">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">Validaciones Pendientes</h2>
+                    <div id="pending-validations" class="space-y-4">
+                        <!-- Pending validations will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Users List -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="mb-6">
+                        <div class="flex items-center space-x-4">
+                            <input type="text" id="user-search" placeholder="Buscar usuarios..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <select id="user-role-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Todos los roles</option>
+                                <option value="customer">Cliente</option>
+                                <option value="business">Comercio</option>
+                                <option value="driver">Repartidor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                            <select id="user-status-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activo</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="suspended">Suspendido</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="users-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Finance Section -->
+        <section id="finance-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-8">Panel Financiero</h1>
+
+                <!-- Financial Summary -->
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Ingresos Totales</p>
+                                <p class="text-2xl font-bold text-green-600" id="total-income">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Comisiones</p>
+                                <p class="text-2xl font-bold text-red-600" id="total-commissions">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Ganancia Neta</p>
+                                <p class="text-2xl font-bold text-blue-600" id="net-profit">$0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Transacciones</p>
+                                <p class="text-2xl font-bold text-purple-600" id="total-transactions">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Ingresos vs Gastos</h2>
+                        <div id="income-expenses-chart" style="height: 300px;"></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-lg">
+                        <h2 class="text-xl font-bold text-gray-900 mb-6">Transacciones por Día</h2>
+                        <div id="transactions-chart" style="height: 300px;"></div>
+                    </div>
+                </div>
+
+                <!-- Financial Operations -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6">Operaciones Financieras</h2>
+                    <div class="grid md:grid-cols-3 gap-6 mb-6">
+                        <button onclick="showSettlementModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                            Generar Liquidación
+                        </button>
+                        <button onclick="showRefundModal()" class="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                            Procesar Reembolso
+                        </button>
+                        <button onclick="showFinancialReport()" class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                            Generar Reporte
+                        </button>
+                    </div>
+                    
+                    <div id="financial-operations-list" class="space-y-4">
+                        <!-- Financial operations will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Support Section -->
+        <section id="support-section" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-8">Soporte y Tickets</h1>
+
+                <!-- Support Stats -->
+                <div class="grid md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white rounded-2xl p-6 shadow-lg text-center">
+                        <div class="text-3xl font-bold text-red-600 mb-2" id="open-tickets">12</div>
+                        <p class="text-sm text-gray-600">Tickets Abiertos</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg text-center">
+                        <div class="text-3xl font-bold text-yellow-600 mb-2" id="pending-tickets">8</div>
+                        <p class="text-sm text-gray-600">En Proceso</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg text-center">
+                        <div class="text-3xl font-bold text-green-600 mb-2" id="resolved-tickets">156</div>
+                        <p class="text-sm text-gray-600">Resueltos</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-lg text-center">
+                        <div class="text-3xl font-bold text-blue-600 mb-2" id="avg-response-time">15min</div>
+                        <p class="text-sm text-gray-600">Tiempo Promedio</p>
+                    </div>
+                </div>
+
+                <!-- Tickets -->
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">Tickets de Soporte</h2>
+                        <div class="flex space-x-4">
+                            <select id="ticket-status-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Todos los estados</option>
+                                <option value="open">Abierto</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="resolved">Resuelto</option>
+                                <option value="closed">Cerrado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tickets-list" class="space-y-4">
+                        <!-- Tickets will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- User Details Modal -->
+    <div id="user-details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full">
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Detalles del Usuario</h2>
+                    <button onclick="closeUserDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div id="user-details-content" class="p-6">
+                    <!-- User details will be loaded here -->
+                </div>
+                
+                <div class="flex space-x-4 p-6 border-t">
+                    <button onclick="closeUserDetailsModal()" class="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        Cerrar
+                    </button>
+                    <button id="suspend-user-btn" onclick="suspendUser()" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                        Suspender Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settlement Modal -->
+    <div id="settlement-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl max-w-lg w-full">
+                <div class="p-6 border-b">
+                    <h2 class="text-2xl font-bold text-gray-900">Generar Liquidación</h2>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Período</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option>1-15 Noviembre 2024</option>
+                            <option>16-30 Octubre 2024</option>
+                            <option>1-15 Octubre 2024</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option>Comercios</option>
+                            <option>Repartidores</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Monto Total</label>
+                        <input type="text" value="$45,670" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4 p-6 border-t">
+                    <button onclick="closeSettlementModal()" class="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="generateSettlement()" class="flex-1 bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors">
+                        Generar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
